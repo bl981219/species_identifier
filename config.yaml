@@ -1,10 +1,17 @@
+
 # Analysis Parameters
 parameters:
   surface_metal_z_percentile: 98.0
-  lattice_o_tolerance: 0.7
-  bond_hysteresis: 0.15
   pbc_analysis: [true, true, false]
-  adsorbate_elements: ["C", "H", "O"] # Defines what is NOT a metal
+  bond_hysteresis: 0.15  
+  # Elements
+  adsorbate_elements: ["C", "H", "O"] 
+  lattice_elements: ["O"] 
+  # Z-Height Tolerances & Depths (in Å)
+  lattice_z_tolerance: 0.7  # How far above the surface Z a lattice atom can be
+  adsorbate_depth: 0.5      # How far below the surface Z an adsorbate can dip
+  metal_depth: 2.0          # How deep to track subsurface metals
+  lattice_depth: 2.0        # How deep to track subsurface lattice atoms
 
 # Bond Cutoffs in Å (Sorted alphabetically for consistency)
 cutoffs:

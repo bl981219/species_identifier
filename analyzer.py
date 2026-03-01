@@ -165,7 +165,6 @@ def main():
     parser = argparse.ArgumentParser(description="Strict Graph-Based Species Counting.")
     parser.add_argument("--config", default="config.yaml", help="Path to config.yaml")
     parser.add_argument("--xdatcar", default="XDATCAR", help="Path to XDATCAR")
-    parser.add_argument("--poscar", default="POSCAR_initial", help="Path to POSCAR_initial")
     parser.add_argument("--out", default="species_conservation.csv", help="Output CSV name")
     args = parser.parse_args()
 
@@ -178,46 +177,54 @@ def main():
     cols_gas = [f"{v}_gas" for v in species_names]
     all_cols = ["Frame"] + cols_ads + cols_gas
 
-    print(f"Reading {args.poscar}...")
-    init_atoms = read(args.poscar)
-    init_syms = np.array(init_atoms.get_chemical_symbols())
-
-    # Dynamically find metals (anything not in the adsorbate list)
-    ads_elements = set(params['adsorbate_elements'])
-    metals_list = sorted({s for s in init_syms if s not in ads_elements})
-    metals_set = set(metals_list)
-    if not metals_set:
-        sys.exit("Error: No metals detected.")
-    print(f"Detected metals: {metals_list}")
-
     print(f"Reading {args.xdatcar}...")
     traj = read(args.xdatcar, index=':') 
     n_frames = len(traj)
     
+    # Extract properties directly from the first frame of the XDATCAR
     frame_zero = traj[0]
     frame_zero.pbc = list(params['pbc_analysis'])
     f0_syms = np.array(frame_zero.get_chemical_symbols())
     f0_pos = frame_zero.get_positions(wrap=True)
 
+    # Dynamically find metals (anything not in the adsorbate list) from Frame 0
+    ads_elements = set(params['adsorbate_elements'])
+    metals_list = sorted({s for s in f0_syms if s not in ads_elements})
+    metals_set = set(metals_list)
+    if not metals_set:
+        sys.exit("Error: No metals detected in frame 0.")
+    print(f"Detected metals: {metals_list}")
+# Calculate static surface properties
     is_metal_arr = np.array([s in metals_set for s in f0_syms])
     surface_z = float(np.percentile(f0_pos[is_metal_arr, 2], params['surface_metal_z_percentile']))
     
-    is_O_arr = (f0_syms == 'O')
-    lattice_o_indices = set(np.where(is_O_arr & (f0_pos[:, 2] < (surface_z + params['lattice_o_tolerance'])))[0])
+    # 1. Identify Lattice Surface Atoms (Generalized from Lattice O)
+    lattice_elements = set(params['lattice_elements'])
+    is_lattice_arr = np.isin(f0_syms, list(lattice_elements))
+    
+    # Find lattice atoms that act as the physical surface
+    lattice_o_indices = set(np.where(is_lattice_arr & (f0_pos[:, 2] < (surface_z + params['lattice_z_tolerance'])))[0])
     is_lattice_o_map = {idx: (idx in lattice_o_indices) for idx in range(len(f0_syms))}
 
-    z_cutoff = surface_z - 0.5
-    is_C = (f0_syms == 'C') & (f0_pos[:, 2] > z_cutoff)
-    is_H = (f0_syms == 'H') & (f0_pos[:, 2] > z_cutoff)
-    is_valid_M = is_metal_arr & (f0_pos[:, 2] > z_cutoff - 2)
-    is_valid_O = is_O_arr & (f0_pos[:, 2] > surface_z - 2) 
+    # 2. Build the Reactive Mask Dynamically
+    reactive_mask = np.zeros(len(f0_syms), dtype=bool)
     
-    reactive_mask = is_C | is_H | is_valid_M | is_valid_O
+    # Add Adsorbates (Dynamic elements, configurable depth)
+    ads_elements = set(params['adsorbate_elements'])
+    is_ads = np.isin(f0_syms, list(ads_elements))
+    reactive_mask |= is_ads & (f0_pos[:, 2] > (surface_z - params['adsorbate_depth']))
+    
+    # Add Metals (Configurable depth)
+    reactive_mask |= is_metal_arr & (f0_pos[:, 2] > (surface_z - params['metal_depth']))
+    
+    # Add Subsurface Lattice Atoms (Configurable depth)
+    reactive_mask |= is_lattice_arr & (f0_pos[:, 2] > (surface_z - params['lattice_depth']))
+    
     reactive_indices = np.where(reactive_mask)[0].astype(int)
 
     prev_bonds = set()
     print(f"Analyzing {n_frames} frames...")
-    
+
     with open(args.out, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(all_cols)

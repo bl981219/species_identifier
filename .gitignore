@@ -4,4 +4,3 @@ venv/
 # Ignore python cache files
 __pycache__/
 *.pyc
-identify_species_from_MD_022526.py

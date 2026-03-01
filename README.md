@@ -15,6 +15,14 @@ A strict, graph-based tool to identify and count chemical species (adsorbates an
    pip install -r requirements.txt
 
 ## Usage
-Ensure you have your initial structure (POSCAR) and trajectory (XDATCAR) in the same directory, then run:
+Ensure you have your trajectory (`XDATCAR`) in the same directory, then run:
    ```bash
-   python analyzer.py --config config.yaml --poscar POSCAR_initial --xdatcar XDATCAR --out results.csv
+   python analyzer.py --config config.yaml --xdatcar XDATCAR --out results.csv
+
+## Quickstart Example
+Want to test the analyzer right away? We have provided a sample trajectory in the `examples/` directory.
+
+Navigate to the examples folder and run the script:
+```bash
+cd examples
+python ../analyzer.py --config config.yaml --xdatcar XDATCAR --out example_results.csv
