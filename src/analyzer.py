@@ -26,10 +26,13 @@ def load_config(config_path):
         elem1, elem2 = bond.split('-')
         parsed_cutoffs[tuple(sorted((elem1, elem2)))] = float(dist)
         
-    # Parse species map into tuples: (1, 4, 0): "CH4"
+    # Parse species map into tuples based on adsorbate_elements length
+    num_elements = len(config['parameters']['adsorbate_elements'])
     parsed_species = {}
     for counts, name in config['species'].items():
         c_tuple = tuple(map(int, counts.split(',')))
+        if len(c_tuple) != num_elements:
+            raise ValueError(f"Species {name} counts {c_tuple} length mismatch.")
         parsed_species[c_tuple] = name
         
     return config['parameters'], parsed_cutoffs, parsed_species
@@ -42,11 +45,10 @@ def get_bond_cutoff(s1: str, s2: str, metals: set, base_cutoffs: dict) -> float:
     k2 = 'M' if s2 in metals else s2
     return float(base_cutoffs.get(tuple(sorted((k1, k2))), 0.0))
 
-def count_key_from_syms(mol_syms: list) -> tuple[int, int, int]:
-    # This remains specific to C, H, O based on your logic, 
-    # but the YAML map makes it easier to extend later.
+def count_key_from_syms(mol_syms: list, adsorbate_elements: list) -> tuple:
+    """Dynamically counts atoms in the order specified by config."""
     c = Counter(mol_syms)
-    return (int(c.get('C', 0)), int(c.get('H', 0)), int(c.get('O', 0)))
+    return tuple(int(c.get(elem, 0)) for elem in adsorbate_elements)
 
 def build_adjacency_and_bonds(sub_syms, reactive_indices, dists, prev_bonds, metals, is_lattice_o_map, base_cutoffs, hysteresis):
     adj = {int(g): set() for g in reactive_indices}

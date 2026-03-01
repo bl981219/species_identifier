@@ -1,28 +1,165 @@
-# Species Analyzer
+# Species Identifier
 
-A strict, graph-based tool to identify and count chemical species (adsorbates and gas-phase molecules) from molecular dynamics trajectories (e.g., VASP `XDATCAR`).
+A graph-based script for identifying and counting chemical species (adsorbates and gas-phase molecules) from molecular dynamics trajectories. This tool is specifically designed for surface science applications involving complex oxides such as perovskites (e.g., SrTiO<sub>3</sub>).
+
+---
 
 ## Features
-* **Surface-Inclusive:** Distinguishes between gas-phase, physisorbed, and chemisorbed species by mapping atom Z-heights and bond connectivity to a static surface model.
-* **Customizable:** Uses a `config.yaml` file so you can easily swap bond cutoffs, tracking elements, and molecule definitions without editing raw Python code.
+
+### Surface-Inclusive Analysis
+Automatically distinguishes between gas-phase, and chemisorbed species using Z-height mapping and bond connectivity.
+
+### Generalized Logic
+Easily customizable for diverse chemical systems by defining element-specific parameters in a YAML configuration.
+
+### Professional CLI Workflow
+Implements a professional Python packaging structure (using `pyproject.toml`) with hyphenated terminal commands for a "suite" experience.
+
+### Bond Hysteresis
+Maintains stable species identification by applying a distance margin to existing bonds between frames to account for vibrational fluctuations.
+
+---
 
 ## Installation
-1. Clone the repository.
-2. Create a virtual environment and install dependencies:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows use: venv\Scripts\activate
-   pip install -r requirements.txt
 
-## Usage
-Ensure you have your trajectory (`XDATCAR`) in the same directory, then run:
-   ```bash
-   python analyzer.py --config config.yaml --xdatcar XDATCAR --out results.csv
+It is recommended to use a virtual environment to manage dependencies.
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/bl981219/species_identifier.git
+cd species_identifier
+```
+
+### 2. Create a virtual environment
+
+```bash
+python -m venv venv
+source venv/bin/activate
+
+# Windows:
+venv\Scripts\activate
+```
+
+### 3. Install the package
+
+Install in standard mode for usage or editable mode (`-e`) for development:
+
+```bash
+pip install .
+```
+
+---
 
 ## Quickstart Example
-Want to test the analyzer right away? We have provided a sample trajectory in the `examples/` directory.
 
-Navigate to the examples folder and run the script:
+A sample trajectory and configuration file are provided in the `examples/` directory.
+
 ```bash
 cd examples
-python ../analyzer.py --config config.yaml --xdatcar XDATCAR --out example_results.csv
+
+species-analyze \
+  --config config.yaml \
+  --xdatcar XDATCAR \
+  --out example_results.csv
+```
+
+This command will:
+
+- Process the sample trajectory
+- Identify species in each frame
+- Output `example_results.csv` with time-resolved species counts
+
+---
+
+## Configuration
+
+The analysis is controlled by `config.yaml`. This allows customization for different chemical systems without modifying the source code.
+
+### Key Parameters
+
+| Parameter | Type | Description |
+|---------|------|-------------|
+| adsorbate_elements | List | Elements tracked as molecules (e.g., `["C","H","O"]`) |
+| lattice_elements | List | Elements forming the static slab surface (e.g., `["O"]`) |
+| cutoffs | Dict | Bond distance thresholds (Å). Keys must be alphabetically ordered (e.g., `C-H: 1.2`) |
+| species | Dict | Mapping from atom counts to species names (e.g., `"1,4,0": "CH4"`) |
+
+---
+
+## Repository Structure
+
+The project follows a professional `src/` layout to ensure a clean namespace and prevent collisions.
+
+```
+.
+├── pyproject.toml
+├── README.md
+├── config.yaml
+├── requirements.txt
+├── src/
+│   └── species_identifier/
+│       ├── __init__.py
+│       └── analyzer.py
+└── examples/
+    ├── XDATCAR
+    ├── config.yaml
+    └── example_results.csv
+```
+
+### Description
+
+| File | Purpose |
+|------|---------|
+| pyproject.toml | Build system and CLI entry points |
+| README.md | Documentation |
+| config.yaml | Configuration template |
+| requirements.txt | Dependency list |
+| analyzer.py | Core analysis logic |
+| examples/ | Example files |
+
+---
+
+## Usage
+
+Run the tool on your own data:
+
+```bash
+species-analyze \
+  --config your_config.yaml \
+  --xdatcar your_XDATCAR \
+  --out your_results.csv
+```
+
+---
+
+## Requirements
+
+Dependencies are automatically installed with:
+
+```bash
+pip install .
+```
+
+### Required Packages
+
+- Python ≥ 3.9
+- NumPy — Numerical array operations
+- ASE (Atomic Simulation Environment) — Trajectory handling
+- PyYAML — Configuration management
+
+---
+
+## Output Format
+
+The output CSV contains species counts for each frame.
+
+Columns represent chemical species identified during the simulation.
+
+### Example
+
+```
+Frame,CH4,CO2,H2O
+0,2,1,0
+1,1,2,1
+```
