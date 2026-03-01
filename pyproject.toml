@@ -5,14 +5,19 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "species_identifier"
 version = "0.1.0"
+description = "Graph-based species counting for MD trajectories"
+authors = [
+    {name = "Mengren Bill Liu"}
+]
 dependencies = [
     "ase",
     "numpy",
     "pyyaml",
 ]
+requires-python = ">=3.9"
 
 [project.scripts]
-species-analyze = "analyzer:main"
+species-analyze = "src.analyzer:main"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.setuptools]
+packages = ["src"]

@@ -1,22 +1,25 @@
 # Species Identifier
 
-A graph-based script for identifying and counting chemical species (adsorbates and gas-phase molecules) from molecular dynamics trajectories. This tool is specifically designed for surface science applications involving complex oxides such as perovskites (e.g., SrTiO<sub>3</sub>).
+A professional, graph-based suite for identifying and counting chemical species (adsorbates and gas-phase molecules) from molecular dynamics trajectories. This tool is specifically designed for surface science applications involving complex oxides such as perovskites (e.g., SrTiO₃, LaSrFeO₃).
 
 ---
 
 ## Features
 
-### Surface-Inclusive Analysis
-Automatically distinguishes between gas-phase, and chemisorbed species using Z-height mapping and bond connectivity.
+- **Surface-Inclusive Analysis**: Automatically distinguishes between gas-phase, physisorbed, and chemisorbed species using Z-height mapping and bond connectivity.
+- **Generalized Logic**: Easily customizable for diverse chemical systems by defining element-specific parameters in a YAML configuration.
+- **Bond Hysteresis**: Maintains stable species identification by applying a distance margin to existing bonds between frames to account for vibrational fluctuations.
 
-### Generalized Logic
-Easily customizable for diverse chemical systems by defining element-specific parameters in a YAML configuration.
+---
 
-### Professional CLI Workflow
-Implements a professional Python packaging structure (using `pyproject.toml`) with hyphenated terminal commands for a "suite" experience.
+## Installation
 
-### Bond Hysteresis
-Maintains stable species identification by applying a distance margin to existing bonds between frames to account for vibrational fluctuations.
+Using a **Conda environment** is recommended for managing scientific dependencies like ASE and NumPy.
+
+### 1. Clone the repository
+```bash
+git clone [https://github.com/bl981219/species_identifier.git](https://github.com/bl981219/species_identifier.git)
+cd species_identifier
 
 ---
 
@@ -31,21 +34,19 @@ git clone https://github.com/bl981219/species_identifier.git
 cd species_identifier
 ```
 
-### 2. Create a virtual environment
+### 2. Create and Activate Conda Environment
 
 ```bash
-python -m venv venv
-source venv/bin/activate
-
-# Windows:
-venv\Scripts\activate
+conda create -n species_env python=3.9 -y
+conda activate species_env
 ```
 
-### 3. Install the package
+### 3. Install Dependencies and Package
 
-Install in standard mode for usage or editable mode (`-e`) for development:
+Install the required libraries from your 'requirements.txt' and then install the package in standard mode (or editable mode `-e` for development).
 
 ```bash
+pip install -r requirements.txt
 pip install .
 ```
 

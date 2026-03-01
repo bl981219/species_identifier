@@ -1,6 +1,15 @@
-# Ignore virtual environments
+# Python build artifacts
+build/
+dist/
+*.egg-info/
+
+# Virtual environment
 venv/
 
-# Ignore python cache files
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+.vscode/
+.DS_Store
