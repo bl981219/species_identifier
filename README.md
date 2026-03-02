@@ -46,11 +46,7 @@ A sample trajectory and configuration file are provided in the `examples/` direc
 
 ```bash
 cd examples
-
-species-analyze \
-  --config config.yaml \
-  --xdatcar XDATCAR \
-  --out example_results.csv
+species-analyze --config config.yaml --xdatcar XDATCAR --out example_results.csv
 ```
 
 This command will:
@@ -69,10 +65,10 @@ The analysis is controlled by `config.yaml`. This allows customization for diffe
 
 | Parameter | Type | Description |
 |---------|------|-------------|
-| adsorbate_elements | List | Elements tracked as molecules (e.g., `["C","H","O"]`) |
-| lattice_elements | List | Elements forming the static slab surface (e.g., `["O"]`) |
+| adsorbates | List | Elements tracked as molecules (e.g., `["C","H","O"]`) |
+| lattice_non_metals | List | Elements forming the static slab surface (e.g., `["O"]`) |
 | cutoffs | Dict | Bond distance thresholds (Å). Keys must be alphabetically ordered (e.g., `C-H: 1.2`) |
-| species | Dict | Mapping from atom counts to species names (e.g., `"1,4,0": "CH4"`) |
+| species_map | Dict | Mapping from atom counts to species names (e.g., `"1,4,0": "CH4"`) |
 
 ---
 
@@ -96,49 +92,6 @@ The project follows a professional `src/` layout to ensure a clean namespace and
     └── example_results.csv
 ```
 
-### Description
-
-| File | Purpose |
-|------|---------|
-| pyproject.toml | Build system and CLI entry points |
-| README.md | Documentation |
-| config.yaml | Configuration template |
-| requirements.txt | Dependency list |
-| analyzer.py | Core analysis logic |
-| examples/ | Example files |
-
----
-
-## Usage
-
-Run the tool on your own data:
-
-```bash
-species-analyze \
-  --config your_config.yaml \
-  --xdatcar your_XDATCAR \
-  --out your_results.csv
-```
-
----
-
-## Requirements
-
-Dependencies are automatically installed with:
-
-```bash
-pip install .
-```
-
-### Required Packages
-
-- Python ≥ 3.9
-- NumPy — Numerical array operations
-- ASE (Atomic Simulation Environment) — Trajectory handling
-- PyYAML — Configuration management
-
----
-
 ## Output Format
 
 The output CSV contains species counts for each frame.
@@ -148,7 +101,7 @@ Columns represent chemical species identified during the simulation.
 ### Example
 
 ```
-Frame,CH4,CO2,H2O
-0,2,1,0
-1,1,2,1
+Frame,CH4,CO2,H2O,...
+0,2,1,0,...
+1,1,2,1,...
 ```
