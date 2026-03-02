@@ -1,12 +1,12 @@
 # Species Identifier
 
-A professional, graph-based suite for identifying and counting chemical species (adsorbates and gas-phase molecules) from molecular dynamics trajectories. This tool is specifically designed for surface science applications involving complex oxides such as perovskites (e.g., SrTiO₃, LaSrFeO₃).
+A graph-based suite for identifying and counting chemical species (adsorbates and gas-phase molecules) from molecular dynamics trajectories. This tool is specifically designed for surface science applications involving complex oxides such as perovskites (e.g., SrTiO<sub>3</sub>).
 
 ---
 
 ## Features
 
-- **Surface-Inclusive Analysis**: Automatically distinguishes between gas-phase, physisorbed, and chemisorbed species using Z-height mapping and bond connectivity.
+- **Surface-Inclusive Analysis**: Automatically distinguishes between gas-phase and chemisorbed species using Z-height mapping and bond connectivity.
 - **Generalized Logic**: Easily customizable for diverse chemical systems by defining element-specific parameters in a YAML configuration.
 - **Bond Hysteresis**: Maintains stable species identification by applying a distance margin to existing bonds between frames to account for vibrational fluctuations.
 
@@ -17,18 +17,6 @@ A professional, graph-based suite for identifying and counting chemical species 
 Using a **Conda environment** is recommended for managing scientific dependencies like ASE and NumPy.
 
 ### 1. Clone the repository
-```bash
-git clone [https://github.com/bl981219/species_identifier.git](https://github.com/bl981219/species_identifier.git)
-cd species_identifier
-
----
-
-## Installation
-
-It is recommended to use a virtual environment to manage dependencies.
-
-### 1. Clone the repository
-
 ```bash
 git clone https://github.com/bl981219/species_identifier.git
 cd species_identifier
