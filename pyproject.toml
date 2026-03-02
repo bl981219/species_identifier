@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "species-identifier"
-version = "0.1.0"
-description = "A graph-based suite for identifying and counting chemical species from MD trajectories."
+version = "1.0.0"
+description = "A graph-based species identification tool for surface-inclusive MD trajectories."
 readme = "README.md"
 requires-python = ">=3.9"
-dependencies =[
+dependencies = [
     "numpy>=1.20.0",
     "ase>=3.22.0",
     "pyyaml>=5.4.0"
