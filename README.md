@@ -65,10 +65,10 @@ The analysis is controlled by `config.yaml`. This allows customization for diffe
 
 | Parameter | Type | Description |
 |---------|------|-------------|
-| adsorbates | List | Elements tracked as molecules (e.g., `["C","H","O"]`) |
+| adsorbates | List | Elements tracked as molecules (e.g., `["C","H","O"]`). Order determines `species_map` keys. |
 | lattice_non_metals | List | Elements forming the static slab surface (e.g., `["O"]`) |
-| cutoffs | Dict | Bond distance thresholds (Å). Keys must be alphabetically ordered (e.g., `C-H: 1.2`) |
-| species_map | Dict | Mapping from atom counts to species names (e.g., `"1,4,0": "CH4"`) |
+| cutoffs | Dict | Bond distance thresholds (Å). Keys are element pairs (e.g., `C-H: 1.2` or `H-C: 1.2`). |
+| species_map | Dict | Mapping from atom counts to species names. Keys correspond to `adsorbates` order. |
 
 ---
 
