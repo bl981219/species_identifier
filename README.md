@@ -14,27 +14,9 @@ A graph-based suite for identifying and counting chemical species (adsorbates an
 
 ## Installation
 
-Using a **Conda environment** is recommended for managing scientific dependencies like ASE and NumPy.
-
-### 1. Clone the repository
 ```bash
 git clone https://github.com/bl981219/species_identifier.git
 cd species_identifier
-```
-
-### 2. Create and Activate Conda Environment
-
-```bash
-conda create -n species_env python=3.9 -y
-conda activate species_env
-```
-
-### 3. Install Dependencies and Package
-
-Install the required libraries from your 'requirements.txt' and then install the package in standard mode (or editable mode `-e` for development).
-
-```bash
-pip install -r requirements.txt
 pip install .
 ```
 
