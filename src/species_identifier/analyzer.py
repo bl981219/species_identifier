@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 import csv
 import sys
-import os
 import yaml
 import argparse
 import logging
 from collections import Counter
 from pathlib import Path
-from typing import List, Dict, Set, Tuple, Any, Optional
+from typing import List, Dict, Set, Tuple, Any, Optional, NamedTuple
 import numpy as np
 import multiprocessing as mp
 from ase.io import read
@@ -19,12 +18,19 @@ from tqdm import tqdm
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+class FrameResult(NamedTuple):
+    frame: int
+    counts: Dict[str, int]
+    bond_distances: List[Dict[str, Any]]
+    species_mapping: Dict[int, str]
+    new_bonds: Set[Tuple[int, int]]
+
 def analyze_frame_standalone(
     atoms: Atoms, 
     frame_idx: int, 
     config_state: Dict[str, Any],
     prev_bonds: Optional[Set[Tuple[int, int]]] = None
-) -> Tuple[int, Dict[str, int], List[Dict[str, Any]], Dict[int, str], Set[Tuple[int, int]]]:
+) -> FrameResult:
     """Standalone function for parallel processing of a single frame."""
     atoms.pbc = config_state['pbc']
     syms = np.array(atoms.get_chemical_symbols())
@@ -38,6 +44,7 @@ def analyze_frame_standalone(
     is_lattice_nm_map = config_state['is_lattice_nm_map']
     species_map = config_state['species_map']
     track_distances = config_state.get('track_distances', [])
+    break_surface_bonds = config_state.get('break_surface_bonds', True)
     
     # 1. Component Atoms (Reactive subset)
     sub_syms = syms[reactive_indices]
@@ -57,9 +64,10 @@ def analyze_frame_standalone(
         gi, gj = int(reactive_indices[i]), int(reactive_indices[j])
         si, sj = sub_syms[i], sub_syms[j]
         
-        # CONSTRAINT: Do not bond Metals to Lattice Non-Metals
-        if (si in metals_set and is_lattice_nm_map.get(gj)) or (sj in metals_set and is_lattice_nm_map.get(gi)):
-            continue
+        # CONSTRAINT: Do not bond Metals to Lattice Non-Metals (if enabled)
+        if break_surface_bonds:
+            if (si in metals_set and is_lattice_nm_map.get(gj)) or (sj in metals_set and is_lattice_nm_map.get(gi)):
+                continue
         
         pair = (gi, gj)
         r_limit = cutoff_matrix.get((si, sj), 0.0)
@@ -128,7 +136,13 @@ def analyze_frame_standalone(
         for idx in mol_idxs:
             species_mapping[int(idx)] = species_name
             
-    return frame_idx + 1, dict(frame_counts), bond_distances, species_mapping, new_bonds
+    return FrameResult(
+        frame=frame_idx + 1,
+        counts=dict(frame_counts),
+        bond_distances=bond_distances,
+        species_mapping=species_mapping,
+        new_bonds=new_bonds
+    )
 
 class TrajectoryAnalyzer:
     def __init__(self, config_path: str):
@@ -151,6 +165,7 @@ class TrajectoryAnalyzer:
         self.lattice_tol = self.config.get('lattice_non_metal_tolerance', 0.7)
         self.m_percentile = self.config.get('surface_metal_z_percentile', 98.0)
         self.track_distances = self.config.get('track_distances', ["O2"])
+        self.break_surface_bonds = self.config.get('break_surface_bonds', True)
         
         self.depth_cutoffs = self.config.get('depth_cutoffs', {
             'adsorbates': -0.5,
@@ -166,7 +181,7 @@ class TrajectoryAnalyzer:
         self.max_search_radius = 0.0
 
     def _validate_config(self):
-        """Basic validation of config keys and values."""
+        """Basic and value-level validation of config keys and values."""
         required_keys = ['adsorbates', 'cutoffs', 'species_map']
         missing = [k for k in required_keys if k not in self.config]
         if missing:
@@ -174,6 +189,14 @@ class TrajectoryAnalyzer:
         
         if not isinstance(self.config['cutoffs'], dict):
             raise ValueError("'cutoffs' must be a dictionary.")
+
+        for key, val in self.config['cutoffs'].items():
+            if float(val) <= 0:
+                raise ValueError(f"Cutoff '{key}' must be positive, got {val}")
+
+        for key, val in self.config.get('depth_cutoffs', {}).items():
+            if float(val) > 0:
+                raise ValueError(f"depth_cutoffs['{key}'] must be ≤ 0 (below surface height), got {val}")
 
     def _prepare_cutoff_matrix(self, elements: List[str]):
         """Build a fast lookup table for bond cutoffs between all element pairs."""
@@ -258,9 +281,9 @@ class TrajectoryAnalyzer:
             'metals_set': self.metals_set,
             'is_lattice_nm_map': self.is_lattice_nm_map,
             'species_map': self.species_map,
-            'adsorbates_set': self.adsorbates_set,
             'adsorbates_list': self.adsorbates_list,
-            'track_distances': self.track_distances
+            'track_distances': self.track_distances,
+            'break_surface_bonds': self.break_surface_bonds
         }
 
     def analyze(self, xdatcar_path: str, output_path: str, n_procs: int = 1, mapping_path: str = None, enable_hysteresis: bool = True):
@@ -277,7 +300,7 @@ class TrajectoryAnalyzer:
         self.setup_static_surface(traj[0])
         config_state = self.get_config_state()
         
-        results = []
+        results: List[FrameResult] = []
         logger.info(f"Analyzing {len(traj)} frames using {n_procs} processes...")
         
         if n_procs > 1:
@@ -291,9 +314,9 @@ class TrajectoryAnalyzer:
                 res = analyze_frame_standalone(atoms, i, config_state, prev_bonds)
                 results.append(res)
                 if enable_hysteresis:
-                    prev_bonds = res[4]
+                    prev_bonds = res.new_bonds
         
-        results.sort(key=lambda x: x[0])
+        results.sort(key=lambda x: x.frame)
         
         # Decomposed output logic
         output_dir = Path(output_path).parent
@@ -306,37 +329,37 @@ class TrajectoryAnalyzer:
         
         logger.info(f"Analysis complete. Results: {output_path}")
 
-    def _write_counts_csv(self, results, path):
+    def _write_counts_csv(self, results: List[FrameResult], path: Path):
         all_species = set()
-        for _, counts, _, _, _ in results:
-            all_species.update(counts.keys())
+        for res in results:
+            all_species.update(res.counts.keys())
         headers = ["Frame"] + sorted(list(all_species))
         
         with open(path, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=headers)
             writer.writeheader()
-            for frame, counts, _, _, _ in results:
-                row = {"Frame": frame}
-                row.update(counts)
+            for res in results:
+                row = {"Frame": res.frame}
+                row.update(res.counts)
                 writer.writerow(row)
 
-    def _write_bond_distances_csv(self, results, path):
+    def _write_bond_distances_csv(self, results: List[FrameResult], path: Path):
         with open(path, 'w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(["Frame", "Species", "Distance_A"])
-            for frame, _, bond_dists, _, _ in results:
-                for entry in bond_dists:
-                    writer.writerow([frame, entry['Species'], entry['Distance']])
+            for res in results:
+                for entry in res.bond_distances:
+                    writer.writerow([res.frame, entry['Species'], entry['Distance']])
 
-    def _write_mapping_csv(self, results, path):
+    def _write_mapping_csv(self, results: List[FrameResult], path: Path):
         mapping_headers = ["Frame"] + [str(idx) for idx in self.reactive_indices]
         with open(path, 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=mapping_headers)
             writer.writeheader()
-            for frame, _, _, mapping, _ in results:
-                row = {"Frame": frame}
+            for res in results:
+                row = {"Frame": res.frame}
                 for idx in self.reactive_indices:
-                    row[str(idx)] = mapping.get(int(idx), "Bulk")
+                    row[str(idx)] = res.species_mapping.get(int(idx), "Bulk")
                 writer.writerow(row)
 
 def main():
