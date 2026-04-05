@@ -63,7 +63,6 @@ The project follows a professional `src/` layout to ensure a clean namespace and
 ├── pyproject.toml
 ├── README.md
 ├── config.yaml
-├── requirements.txt
 ├── src/
 │   └── species_identifier/
 │       ├── __init__.py

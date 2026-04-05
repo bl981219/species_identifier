@@ -15,5 +15,10 @@ dependencies = [
     "tqdm>=4.60.0"
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0.0"
+]
+
 [project.scripts]
 species-analyze = "species_identifier.analyzer:main"
